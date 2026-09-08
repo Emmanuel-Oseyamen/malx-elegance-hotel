@@ -110,7 +110,7 @@ export default function Rooms() {
               >
 
                 <p className="uppercase tracking-[6px] text-[#D4A373]">
-                  Bisyl Suites
+                  Malx Elegance
                 </p>
 
                 <h3 className="mt-4 text-4xl font-light text-white">
