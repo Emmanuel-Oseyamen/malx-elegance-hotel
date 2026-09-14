@@ -4,7 +4,7 @@ export const buildWhatsAppBookingUrl = (data: {
   guests?: number;
   roomType?: string;
 }) => {
-  const message = `Grand Cuba Hotel,
+  const message = `Malx Elegance Hotel,
 
 I would like to make a reservation.
 

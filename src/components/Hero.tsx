@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,7 +11,6 @@ const slides = [
   "/hero2.png",
   "/hero3.png",
   "/hero4.png",
-  "/hero5.png",
 ];
 
 const SLIDE_DURATION = 6000;
@@ -18,22 +18,91 @@ const IMAGE_TRANSITION_DURATION = 1.1;
 
 export default function Hero() {
   const [current, setCurrent] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  /*
+   * =========================================================
+   * PRELOAD ALL HERO IMAGES
+   * =========================================================
+   *
+   * We preload every image before starting the slideshow.
+   *
+   * This means:
+   *
+   * Page loads
+   *      ↓
+   * All 5 images begin downloading
+   *      ↓
+   * We wait until all 5 are ready
+   *      ↓
+   * Slideshow begins
+   *      ↓
+   * Smooth transitions with no image-loading delay
+   *
+   * The timeout prevents a broken/missing image from
+   * permanently preventing the slideshow from starting.
+   */
 
   useEffect(() => {
+    let mounted = true;
+
+    const preloadImages = async () => {
+      const imagePromises = slides.map(
+        (src) =>
+          new Promise<void>((resolve) => {
+            const img = new window.Image();
+
+            img.src = src;
+
+            if (img.complete) {
+              resolve();
+              return;
+            }
+
+            img.onload = () => resolve();
+
+            img.onerror = () => {
+              console.warn(`Hero image failed to load: ${src}`);
+              resolve();
+            };
+          })
+      );
+
+      await Promise.all(imagePromises);
+
+      if (mounted) {
+        setImagesLoaded(true);
+      }
+    };
+
+    preloadImages();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  /*
+   * =========================================================
+   * START SLIDESHOW ONLY AFTER IMAGES ARE READY
+   * =========================================================
+   */
+
+  useEffect(() => {
+    if (!imagesLoaded) return;
+
     const interval = window.setInterval(() => {
       setCurrent((prev) => (prev + 1) % slides.length);
     }, SLIDE_DURATION);
 
     return () => window.clearInterval(interval);
-  }, []);
+  }, [imagesLoaded]);
 
   return (
     <section className="relative min-h-screen overflow-hidden">
+
       {/* ================================================= */}
       {/* HERO IMAGES                                      */}
-      {/* All images remain mounted so they can load ahead */}
-      {/* of time. This prevents loading delays between    */}
-      {/* slides.                                          */}
       {/* ================================================= */}
 
       <div className="absolute inset-0">
@@ -68,7 +137,7 @@ export default function Hero() {
               src={image}
               alt=""
               fill
-              priority={index === 0}
+              priority
               loading="eager"
               sizes="100vw"
               className="object-cover object-center"
