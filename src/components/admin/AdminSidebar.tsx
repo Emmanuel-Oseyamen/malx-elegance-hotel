@@ -6,6 +6,7 @@ import {
   Building2,
   Hotel,
   LayoutDashboard,
+  UserCircle,
   LogOut,
   Settings,
 } from "lucide-react";
@@ -41,6 +42,11 @@ export default function AdminSidebar() {
       href: "/admin/dashboard/settings",
       label: "Hotel Details",
       icon: Settings,
+    },
+    {
+      label: "Account",
+      href: "/admin/dashboard/account",
+      icon: UserCircle,
     },
   ];
 
