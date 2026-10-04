@@ -1,126 +1,241 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { buildWhatsAppBookingUrl } from "@/lib/booking";
 
-type RoomType = "Standard" | "Deluxe" | "Executive Suite";
+type RoomType =
+  | "Down Room"
+  | "Up Room"
+  | "Deluxe Suite"
+  | "Executive Deluxe Suite"
+  | "Standard Room 301–307"
+  | "Executive Suite";
 
 export default function BookingWidget() {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState(1);
-  const [roomType, setRoomType] = useState<RoomType>("Standard");
+  const [roomType, setRoomType] =
+    useState<RoomType>("Down Room");
 
-  const buildWhatsAppUrl = () => {
-    const message = `Hello Fergmond Luxury Hotel,
+  const [loading, setLoading] = useState(false);
 
-I would like to check availability / make a reservation.
+  const [error, setError] = useState("");
 
-Room Type: ${roomType}
-Check-in: ${checkIn}
-Check-out: ${checkOut}
-Guests: ${guests}
+  async function handleCTA() {
+    setError("");
 
-Please confirm availability.`;
-
-    return `https://wa.me/2349066477122?text=${encodeURIComponent(message)}`;
-  };
-
-  // 🔥 SINGLE SOURCE OF TRUTH FOR CTA ACTION
-  const handleCTA = () => {
     if (!checkIn || !checkOut) {
-      alert("Please select check-in and check-out dates.");
+      setError(
+        "Please select both check-in and check-out dates."
+      );
       return;
     }
 
     if (new Date(checkOut) <= new Date(checkIn)) {
-      alert("Check-out must be after check-in.");
+      setError(
+        "Check-out must be after check-in."
+      );
       return;
     }
 
-    const url = buildWhatsAppBookingUrl({
-      checkIn,
-      checkOut,
-      guests,
-      roomType,
-    });
+    if (guests < 1 || guests > 10) {
+      setError(
+        "Please select between 1 and 10 guests."
+      );
+      return;
+    }
 
-    window.open(url, "_blank");
-  };
+    try {
+      setLoading(true);
+
+      const url = await buildWhatsAppBookingUrl({
+        checkIn,
+        checkOut,
+        guests,
+        roomType,
+      });
+
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error(
+        "Failed to create WhatsApp booking:",
+        error
+      );
+
+      setError(
+        "Unable to open WhatsApp right now. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-black/70 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8 text-white shadow-2xl">
+    <div className="mx-auto w-full max-w-5xl rounded-2xl border border-white/10 bg-black/70 p-5 text-white shadow-2xl backdrop-blur-md sm:p-6 md:p-8">
 
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl md:text-3xl font-semibold">
+        <h2 className="text-2xl font-semibold sm:text-3xl">
           Book Your Stay
         </h2>
-        <p className="text-white/60 mt-1">
-          Check availability and reserve your luxury experience
+
+        <p className="mt-1 text-sm text-white/60 sm:text-base">
+          Check availability and reserve your luxury experience.
         </p>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Booking Fields */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
 
         {/* Check-in */}
         <div>
-          <label className="text-xs text-white/60 mb-2 block">Check-In</label>
+          <label
+            htmlFor="check-in"
+            className="mb-2 block text-xs text-white/60"
+          >
+            Check-In
+          </label>
+
           <input
+            id="check-in"
             type="date"
             value={checkIn}
-            onChange={(e) => setCheckIn(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-[#8B0015]"
+            min={new Date().toISOString().split("T")[0]}
+            onChange={(event) =>
+              setCheckIn(event.target.value)
+            }
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-sm outline-none transition focus:border-[#D4A373]"
           />
         </div>
 
         {/* Check-out */}
         <div>
-          <label className="text-xs text-white/60 mb-2 block">Check-Out</label>
+          <label
+            htmlFor="check-out"
+            className="mb-2 block text-xs text-white/60"
+          >
+            Check-Out
+          </label>
+
           <input
+            id="check-out"
             type="date"
             value={checkOut}
-            onChange={(e) => setCheckOut(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-[#8B0015]"
+            min={
+              checkIn ||
+              new Date().toISOString().split("T")[0]
+            }
+            onChange={(event) =>
+              setCheckOut(event.target.value)
+            }
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-sm outline-none transition focus:border-[#D4A373]"
           />
         </div>
 
         {/* Guests */}
         <div>
-          <label className="text-xs text-white/60 mb-2 block">Guests</label>
+          <label
+            htmlFor="guests"
+            className="mb-2 block text-xs text-white/60"
+          >
+            Guests
+          </label>
+
           <input
+            id="guests"
             type="number"
             min={1}
             max={10}
             value={guests}
-            onChange={(e) => setGuests(Number(e.target.value))}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-[#8B0015]"
+            onChange={(event) =>
+              setGuests(
+                Math.min(
+                  10,
+                  Math.max(
+                    1,
+                    Number(event.target.value)
+                  )
+                )
+              )
+            }
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-sm outline-none transition focus:border-[#D4A373]"
           />
         </div>
 
         {/* Room Type */}
         <div>
-          <label className="text-xs text-white/60 mb-2 block">Room Type</label>
-          <select
-            value={roomType}
-            onChange={(e) => setRoomType(e.target.value as RoomType)}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-[#8B0015]"
+          <label
+            htmlFor="room-type"
+            className="mb-2 block text-xs text-white/60"
           >
-            <option>Standard</option>
-            <option>Deluxe</option>
-            <option>Executive Suite</option>
+            Room Type
+          </label>
+
+          <select
+            id="room-type"
+            value={roomType}
+            onChange={(event) =>
+              setRoomType(
+                event.target.value as RoomType
+              )
+            }
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-sm outline-none transition focus:border-[#D4A373]"
+          >
+            <option value="Down Room">
+              Down Room
+            </option>
+
+            <option value="Up Room">
+              Up Room
+            </option>
+
+            <option value="Deluxe Suite">
+              Deluxe Suite
+            </option>
+
+            <option value="Executive Deluxe Suite">
+              Executive Deluxe Suite
+            </option>
+
+            <option value="Standard Room 301–307">
+              Standard Room 301–307
+            </option>
+
+            <option value="Executive Suite">
+              Executive Suite
+            </option>
           </select>
         </div>
       </div>
 
-      {/* CTA BUTTON (single unified action) */}
-      <div className="mt-6 flex justify-end">
+      {/* Error */}
+      {error && (
+        <div className="mt-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {error}
+        </div>
+      )}
+
+      {/* CTA */}
+      <div className="mt-6 flex justify-stretch sm:justify-end">
         <button
+          type="button"
           onClick={handleCTA}
-          className="bg-[#8B0015] hover:bg-[#A3001A] transition-all duration-300 px-8 py-3 rounded-lg font-semibold tracking-wide shadow-lg hover:scale-105"
+          disabled={loading}
+          className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-lg bg-[#D4A373] px-8 py-3 font-semibold tracking-wide text-black shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#C08A5C] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
-          Check Availability
+          {loading ? (
+            <>
+              <Loader2
+                size={18}
+                className="animate-spin"
+              />
+              Opening WhatsApp...
+            </>
+          ) : (
+            "Check Availability"
+          )}
         </button>
       </div>
     </div>
